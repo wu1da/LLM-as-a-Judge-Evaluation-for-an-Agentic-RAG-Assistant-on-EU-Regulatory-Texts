@@ -36,10 +36,34 @@ class BM25Index:
                 s += self.idf[t] * tf * (self.k1 + 1) / (tf + self.k1 * norm)
         return s
 
-    def search(self, query, k=5):
+    def search(self, query, k=5, one_per_source=True):
         """Return the k best chunks as a list of (score, chunk)."""
         terms = set(tokenize(query))
         scored = [(self.score(terms, i), c) for i, c in enumerate(self.chunks)]
         scored = [x for x in scored if x[0] > 0]
         scored.sort(key=lambda x: -x[0])
+        if one_per_source:
+            return best_per_source(scored, k)
         return scored[:k]
+
+
+
+
+def source_key(chunk):
+    """Which article or annex a chunk comes from, e.g. ('article', 'gdpr', 20)."""
+    return (chunk["kind"], chunk["act"], chunk["number"])
+
+
+def best_per_source(scored, k):
+    """From (score, chunk) pairs sorted best-first, keep the first chunk of each source, up to k."""
+    seen = set()
+    results = []
+    for score, chunk in scored:
+        key = source_key(chunk)
+        if key not in seen:
+            seen.add(key)
+            results.append((score, chunk))
+            if len(results) == k:
+                break
+    return results
+    

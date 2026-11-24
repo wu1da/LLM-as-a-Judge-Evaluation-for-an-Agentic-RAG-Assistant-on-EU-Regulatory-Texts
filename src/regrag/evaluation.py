@@ -23,3 +23,11 @@ def recall_at_k(index, qa, k):
         if any(is_gold(chunk, item) for _, chunk in results):
             hits += 1
     return hits / len(qa)
+
+
+
+
+def results_row(name, index, qa, ks=(1, 3, 5, 10)):
+    """Recall@k for several k, formatted as one row of the results.md table."""
+    scores = [f"{recall_at_k(index, qa, k):.3f}" for k in ks]
+    return "| " + name + " | " + " | ".join(scores) + " |"
