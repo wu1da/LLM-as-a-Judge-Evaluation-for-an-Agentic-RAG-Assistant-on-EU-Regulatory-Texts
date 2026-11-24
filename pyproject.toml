@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "regrag"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = ["lxml"]
+
+[project.optional-dependencies]
+gen = ["transformers>=4.48,<5", "accelerate"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
