@@ -10,6 +10,7 @@ dependencies = ["lxml"]
 
 [project.optional-dependencies]
 gen = ["transformers>=4.48,<5", "accelerate"]
+dense = ["sentence-transformers"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

@@ -48,7 +48,6 @@ class BM25Index:
 
 
 
-
 def source_key(chunk):
     """Which article or annex a chunk comes from, e.g. ('article', 'gdpr', 20)."""
     return (chunk["kind"], chunk["act"], chunk["number"])
@@ -66,4 +65,29 @@ def best_per_source(scored, k):
             if len(results) == k:
                 break
     return results
-    
+
+
+
+
+class DenseIndex:
+    """Embedding (meaning-based) search over the chunks of one language."""
+
+    def __init__(self, chunks, lang, model, batch_size=32):
+        import numpy as np   # imported here so BM25 still works without numpy installed
+        self.np = np
+        self.model = model
+        self.chunks = [c for c in chunks if c["lang"] == lang]
+        texts = [c["title"] + " " + c["text"] for c in self.chunks]
+        # one vector per chunk, normalized to length 1
+        self.embeddings = model.encode(texts, batch_size=batch_size,
+                                       normalize_embeddings=True, show_progress_bar=True)
+
+    def search(self, query, k=5, one_per_source=True):
+        """Return the k most similar chunks as a list of (score, chunk)."""
+        q = self.model.encode([query], normalize_embeddings=True)[0]
+        sims = self.embeddings @ q            # cosine similarity with every chunk
+        order = self.np.argsort(-sims)        # indices, best first
+        scored = [(float(sims[i]), self.chunks[i]) for i in order]
+        if one_per_source:
+            return best_per_source(scored, k)
+        return scored[:k]
