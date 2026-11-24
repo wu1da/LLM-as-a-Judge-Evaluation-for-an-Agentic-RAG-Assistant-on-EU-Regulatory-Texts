@@ -91,3 +91,26 @@ class DenseIndex:
         if one_per_source:
             return best_per_source(scored, k)
         return scored[:k]
+
+
+
+    
+
+class HybridIndex:
+    """Merge BM25 and dense rankings with Reciprocal Rank Fusion (RRF)."""
+
+    def __init__(self, bm25, dense, n_candidates=50, rrf_k=60):
+        self.bm25, self.dense = bm25, dense
+        self.n_candidates, self.rrf_k = n_candidates, rrf_k
+
+    def search(self, query, k=5, one_per_source=True):
+        fused = {}   # chunk_id -> [rrf score, chunk]
+        for index in (self.bm25, self.dense):
+            results = index.search(query, self.n_candidates, one_per_source=False)
+            for rank, (_, chunk) in enumerate(results, start=1):
+                entry = fused.setdefault(chunk["chunk_id"], [0.0, chunk])
+                entry[0] += 1 / (self.rrf_k + rank)
+        scored = sorted(((s, c) for s, c in fused.values()), key=lambda x: -x[0])
+        if one_per_source:
+            return best_per_source(scored, k)
+        return scored[:k]
